@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>CPS测试</title>
+    <style>
+        body {
+            user-select: none;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            text-align: center;
+            font-size: 24px;
+            margin-top: 100px;
+        }
+    </style>
+</head>
+<body>
+    <div id="countdown">10</div>
+    <h1 id="click-count">点击次数: 0</h1>
+    <h1 id="cps">CPS: 0</h1>
+
+    <script type="text/javascript">
+        var clickCount = 0;
+        var startTime;
+        var timer;
+        var isTimerStarted = false;
+        var isClickEnabled = true;
+
+        document.addEventListener("click", function() {
+            if (isClickEnabled && !isTimerStarted) {
+                startCountdown();
+                isTimerStarted = true;
+            }
+            if (isClickEnabled) {
+                clickCount++;
+                document.getElementById("click-count").innerHTML = "点击次数: " + clickCount;
+            }
+        });
+
+        function startCountdown() {
+            var countdownElement = document.getElementById("countdown");
+            var countdown = 10;
+            countdownElement.innerHTML = countdown;
+            var countdownInterval = setInterval(function() {
+                countdown--;
+                countdownElement.innerHTML = countdown;
+                if (countdown <= 0) {
+                    clearInterval(countdownInterval);
+                    isClickEnabled = false;
+                    calculateCPS();
+                }
+            }, 1000);
+        }
+
+        function calculateCPS() {
+            var elapsedTime = 10; // 10秒倒计时
+            var cps = clickCount / elapsedTime;
+            document.getElementById("cps").innerHTML = "CPS: " + cps.toFixed(2);
+            alert("时间到！你的CPS是: " + cps.toFixed(2));
+        }
+    </script>
+</body>
+</html>
