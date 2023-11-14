@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>批量打开网址</title>
+</head>
+<body>
+<div>
+<button onclick="openURLs()">打开网址</button>
+</div>
+<div>
+<h3>输入网址，每行一个</h3>
+</div>
+<textarea id="urlInput" rows="50" cols="100" placeholder="输入网址，每行一个"></textarea>
+
+<script>
+function openURLs() {
+    // 获取输入框的值
+    var input = document.getElementById("urlInput").value;
+
+    if (input) {
+        // 将输入的字符串按行分割为数组
+        var urls = input.split('\n');
+
+        // 循环打开网址
+        for (var i = 0; i < urls.length; i++) {
+            // 移除空格
+            var url = urls[i].trim();
+            
+            // 避免打开空网址
+            if (url !== "") {
+                // 在新标签页中打开网址
+                window.open(url, '_blank');
+            }
+        }
+    }
+}
+</script>
+
+</body>
+</html>

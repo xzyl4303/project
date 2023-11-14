@@ -1,0 +1,160 @@
+<html><head>
+    <title>文件夹树状图生成器</title>
+    <style>
+        ul {
+            list-style-type: none;
+        }
+        ul ul {
+            margin-left: 20px;
+            display: none;
+        }
+        .expand-btn {
+            cursor: pointer;
+        }
+        .expanded::before {
+            content: '▼ ';
+        }
+        .collapsed::before {
+            content: '▶ ';
+        }
+        .file-link {
+            color: blue;
+            text-decoration: underline;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <h1>生成树状图</h1>
+    <div>
+        <input type="file" id="folderInput" webkitdirectory="" mozdirectory="" msdirectory="" odirectory="" directory="" multiple="">
+        <button id="expandCollapseButton">一键全部展开/收缩</button>
+        <button id="clearButton">清除</button>
+    </div>
+    <div id="tree"></div>
+
+    <script>
+        document.getElementById('folderInput').addEventListener('change', handleFolderSelect, false);
+        document.getElementById('expandCollapseButton').addEventListener('click', expandCollapseAll, false);
+        document.getElementById('clearButton').addEventListener('click', clearTree, false);
+
+        function handleFolderSelect(event) {
+            const files = event.target.files;
+            const tree = document.getElementById('tree');
+            tree.innerHTML = '';
+            if (files.length > 0) {
+                const folderName = files[0].webkitRelativePath.split('/')[0];
+                tree.textContent += folderName + '\n';
+                buildTree(files, folderName + '/', '', tree);
+            }
+        }
+
+        async function buildTree(files, path, prefix, parent) {
+            const items = Array.from(files).filter(file => 
+                file.webkitRelativePath.startsWith(path) &&
+                !file.name.startsWith('.')
+            );
+
+            const folders = {};
+            const otherItems = [];
+
+            items.forEach(item => {
+                const parts = item.webkitRelativePath.substring(path.length).split('/');
+                if (parts.length > 1) {
+                    // Folder
+                    if (!folders[parts[0]]) {
+                        folders[parts[0]] = [];
+                    }
+                    folders[parts[0]].push(item);
+                } else {
+                    // File directly inside folder
+                    otherItems.push(item);
+                }
+            });
+
+            for (const folderName of Object.keys(folders).sort()) {
+                const folderNode = document.createElement('div');
+                folderNode.innerHTML = prefix + '├── <span class="expand-btn collapsed"></span> ' + '<span class="file-link" data-path="' + path + folderName + '" onclick="openFile(this)">' + folderName + '</span><ul style="display: none;"></ul>';
+                parent.appendChild(folderNode);
+                const expandBtn = folderNode.querySelector('.expand-btn');
+                expandBtn.addEventListener('click', function() {
+                    const childUl = folderNode.querySelector('ul');
+                    if (childUl.style.display === 'none') {
+                        childUl.style.display = 'block';
+                        expandBtn.classList.remove('collapsed');
+                        expandBtn.classList.add('expanded');
+                    } else {
+                        childUl.style.display = 'none';
+                        expandBtn.classList.remove('expanded');
+                        expandBtn.classList.add('collapsed');
+                    }
+                });
+                await new Promise(resolve => setTimeout(resolve, 0)); // 添加延迟
+                await buildTree(folders[folderName], path + folderName + '/', prefix + '│   ', folderNode.querySelector('ul'));
+            }
+
+            for (const file of otherItems.sort((a, b) => a.name.localeCompare(b.name))) {
+                const fileNode = document.createElement('li');
+                fileNode.innerHTML = prefix + '├── ' + '<span class="file-link" data-path="' + file.webkitRelativePath + '" onclick="openFile(this)">' + file.name + '</span>';
+                parent.appendChild(fileNode);
+            }
+        }
+
+        function openFile(element) {
+            const path = element.getAttribute('data-path');
+            const file = getFileByPathAndName(path);
+            if (file) {
+                const reader = new FileReader();
+                reader.onloadend = function() {
+                    const blob = new Blob([reader.result], { type: file.type });
+                    const url = URL.createObjectURL(blob);
+                    window.open(url, '_blank');
+                };
+                reader.readAsArrayBuffer(file);
+            }
+        }
+
+        function getFileByPathAndName(path) {
+            const files = document.getElementById('folderInput').files;
+            for (const file of files) {
+                if (file.webkitRelativePath === path) {
+                    return file;
+                }
+            }
+            return null;
+        }
+
+        function expandCollapseAll() {
+            const expandBtns = document.querySelectorAll('.expand-btn');
+            const collapsedBtns = document.querySelectorAll('.collapsed');
+            if (collapsedBtns.length === 0) {
+                // All expanded, collapse all
+                expandBtns.forEach(btn => {
+                    btn.classList.remove('expanded');
+                    btn.classList.add('collapsed');
+                });
+                const uls = document.querySelectorAll('ul');
+                uls.forEach(ul => {
+                    ul.style.display = 'none';
+                });
+            } else {
+                // Some or all collapsed, expand all
+                expandBtns.forEach(btn => {
+                    btn.classList.remove('collapsed');
+                    btn.classList.add('expanded');
+                });
+                const uls = document.querySelectorAll('ul');
+                uls.forEach(ul => {
+                    ul.style.display = 'block';
+                });
+            }
+        }
+
+        function clearTree() {
+            document.getElementById('tree').textContent = '';
+            document.getElementById('folderInput').value = ''; // 清空文件选择框中的内容
+        }
+    </script>
+
+
+</body></html>
