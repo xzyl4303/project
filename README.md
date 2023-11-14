@@ -4,5 +4,6 @@
 ![Static Badge](https://img.shields.io/badge/JavaScript-Code-yellow?logo=Javascript&logoColor=yellow)
 ![Static Badge](https://img.shields.io/badge/CSS3-Code-blue?logo=CSS3&logoColor=blue)
 
+## 纯前端构成，下载下来后，可以直接在浏览器中运行，无需网络
 
 # 后续我会慢慢添加其他的
