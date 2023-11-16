@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>屏幕录制</title>
+    <style>
+        body {
+            font-family: '微软雅黑', 'Microsoft YaHei', sans-serif;
+            text-align: center;
+            margin: 20px;
+        }
+
+        h1 {
+            color: #333;
+        }
+
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            margin: 10px;
+        }
+
+        button:disabled {
+            background-color: #aaa;
+            cursor: not-allowed;
+        }
+
+        #recordedVideo {
+            max-width: 100%;
+            margin-top: 20px;
+            display: none;
+        }
+
+        #videoInfo {
+            margin-top: 20px;
+            text-align: left;
+        }
+
+        label {
+            display: inline-block;
+            margin-top: 10px;
+        }
+
+        input {
+            width: 60px;
+        }
+    </style>
+</head>
+<body>
+    <h1>屏幕录制</h1>
+    <label for="fps">FPS: </label>
+    <input type="number" id="fps" min="1" max="60" value="30">
+    <br>
+    <label for="resolutionWidth">分辨率宽度: </label>
+    <input type="number" id="resolutionWidth" min="1" value="1920">
+    <label for="resolutionHeight">分辨率高度: </label>
+    <input type="number" id="resolutionHeight" min="1" value="1080">
+    <br>
+    <label for="countdown">倒计时 (秒): </label>
+    <input type="number" id="countdown" min="0" value="0">
+    <br>
+    <button id="startButton">开始录制</button>
+    <button id="stopButton" disabled>停止录制</button>
+    <button id="downloadButton" disabled>下载视频</button>
+    <div id="recordedVideo"></div>
+    <div id="videoInfo"></div>
+
+    <script>
+        let mediaRecorder;
+        let recordedChunks = [];
+        let recordedStream;
+        let fpsInput = document.getElementById('fps');
+        let resolutionWidthInput = document.getElementById('resolutionWidth');
+        let resolutionHeightInput = document.getElementById('resolutionHeight');
+        let countdownInput = document.getElementById('countdown');
+
+        const startButton = document.getElementById('startButton');
+        const stopButton = document.getElementById('stopButton');
+        const downloadButton = document.getElementById('downloadButton');
+        const recordedVideo = document.getElementById('recordedVideo');
+        const videoInfo = document.getElementById('videoInfo');
+
+        startButton.addEventListener('click', startRecording);
+        stopButton.addEventListener('click', stopRecording);
+        downloadButton.addEventListener('click', downloadVideo);
+
+        async function startRecording() {
+            const stream = await navigator.mediaDevices.getDisplayMedia({
+                video: { 
+                    mediaSource: 'screen',
+                    width: { ideal: parseInt(resolutionWidthInput.value) },
+                    height: { ideal: parseInt(resolutionHeightInput.value) },
+                    frameRate: { ideal: parseInt(fpsInput.value) }
+                },
+                audio: true // 启用音频录制
+            });
+
+            recordedStream = stream;
+
+            mediaRecorder = new MediaRecorder(stream);
+
+            mediaRecorder.ondataavailable = (event) => {
+                if (event.data.size > 0) {
+                    recordedChunks.push(event.data);
+                }
+            };
+
+            mediaRecorder.onstop = () => {
+                const blob = new Blob(recordedChunks, { type: 'video/webm' });
+
+                // 显示录制的音视频文件
+                recordedVideo.innerHTML = `<video controls src="${URL.createObjectURL(blob)}"></video>`;
+                recordedVideo.style.display = 'block';
+
+                downloadButton.disabled = false;
+
+                // 显示视频信息
+                displayVideoInfo(blob.size);
+
+                // 缩小视频界面
+                recordedVideo.firstChild.style.width = '50%'; // 调整百分比以适应你的需求
+            };
+
+            // 如果设置了倒计时，延迟录制开始
+            const countdownValue = parseInt(countdownInput.value);
+            if (countdownValue > 0) {
+                startButton.disabled = true;
+                setTimeout(() => {
+                    startButton.disabled = false;
+                    mediaRecorder.start();
+                }, countdownValue * 1000);
+            } else {
+                mediaRecorder.start();
+            }
+
+            startButton.disabled = true;
+            stopButton.disabled = false;
+            downloadButton.disabled = true;
+        }
+
+        function stopRecording() {
+            mediaRecorder.stop();
+            recordedStream.getTracks().forEach(track => track.stop()); // 停止录制时同时停止音频流
+
+            startButton.disabled = false;
+            stopButton.disabled = true;
+        }
+
+        function downloadVideo() {
+            const blob = new Blob(recordedChunks, { type: 'video/webm' });
+
+            // 创建一个下载链接
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            document.body.appendChild(a);
+            a.style.display = 'none';
+            a.href = url;
+            a.download = 'recorded-video.webm';
+            a.click();
+            window.URL.revokeObjectURL(url);
+        }
+
+        function displayVideoInfo(size) {
+            const fileSizeInMB = (size / (1024 * 1024)).toFixed(2);
+            const infoText = `视频文件大小: ${fileSizeInMB} MB`;
+            videoInfo.innerText = infoText;
+        }
+    </script>
+</body>
+</html>
